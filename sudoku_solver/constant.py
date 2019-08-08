@@ -1,0 +1,3 @@
+VERSION = '0.5.1'
+WIDTH = 500
+HEIGHT = 510
