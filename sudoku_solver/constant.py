@@ -1,4 +1,4 @@
-VERSION = '0.5.3'
+VERSION = '0.6.0'
 WIDTH = 500
 HEIGHT = 510
 BUTTON_FONT = 'arial 15'

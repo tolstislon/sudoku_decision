@@ -5,6 +5,7 @@ from typing import Union
 from .constant import VERSION, WIDTH, HEIGHT, BUTTON_FONT, ENTRY_BLOCK_FONT
 from .enums import Event, Color
 from .sudoku_solver import SudokuSolver
+from itertools import chain
 
 
 class WrapFrame(tk.Frame):
@@ -69,6 +70,10 @@ class Body(tk.Frame):
         self._blocks.sort(key=lambda x: (x.element_position['row'], x.element_position['col']))
 
     def _start_command(self) -> None:
+        if hasattr(self, '_info_label'):
+            self._info_label.destroy()
+            del self._info_label
+
         matrix = [[0 for _ in range(9)] for _ in range(9)]
         self._button['state'] = tk.DISABLED
         for block in self._blocks:
@@ -77,14 +82,36 @@ class Body(tk.Frame):
             if value:
                 matrix[block.element_position['row']][block.element_position['col']] = int(value)
                 setattr(block, '_base_value', True)
-        sudoku = SudokuSolver(matrix)
-        sudoku.run()
-        for r in range(9):
-            for c in range(9):
-                self.set_value(sudoku.data[r][c], r, c)
 
-        self._info_label = tk.Label(self, text=f'time: {round(sudoku.duration, 4)} s', font='arial 10')
-        self._info_label.grid(row=4, column=1)
+        try:
+            for row in range(9):
+                row_data = [i for i in matrix[row] if i != 0]
+                assert len(row_data) == len(set(row_data))
+                col_data = [matrix[row][i] for i in range(9) if matrix[row][i] != 0]
+                assert len(col_data) == len(set(col_data))
+
+            for row in range(0, 9, 3):
+                for col in range(0, 9, 3):
+                    block_data = [matrix[i + row][col: col + 3] for i in range(3)]
+                    block_data = [i for i in chain(*block_data) if i != 0]
+                    assert len(block_data) == len(set(block_data))
+
+        except AssertionError:
+            self._info_label = tk.Label(self, text='Invalid data', font='arial 12', foreground='red')
+            self._info_label.grid(row=4, column=1)
+            self._button['state'] = tk.NORMAL
+            for block in self._blocks:
+                block['state'] = tk.NORMAL
+                setattr(block, '_base_value', False)
+        else:
+            sudoku = SudokuSolver(matrix)
+            sudoku.run()
+            for r in range(9):
+                for c in range(9):
+                    self.set_value(sudoku.data[r][c], r, c)
+
+            self._info_label = tk.Label(self, text=f'time: {round(sudoku.duration, 4)} s', font='arial 10')
+            self._info_label.grid(row=4, column=1)
 
     def _reset_command(self) -> None:
         for block in self._blocks:
